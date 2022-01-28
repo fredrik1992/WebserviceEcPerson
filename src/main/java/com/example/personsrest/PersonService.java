@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -57,12 +58,13 @@ public class PersonService {
         personRepository.delete(id);
     }
 
-    public List<String> addGroup(String personId, String groupId) {
-        groupRemote.createGroup(groupId);
-        Person fetchedPerson = personRepository.findById(personId).get();
+    public List<String> addGroup(String personId, String groupName) {
+        String groupId = groupRemote.createGroup(groupName);
+        Person fetchedPerson = personRepository.findById(personId).get(); //person
         fetchedPerson.addGroup(groupId);
 
-        return personRepository.save(fetchedPerson).getGroups();
+
+        return personRepository.save(fetchedPerson).getGroups().stream().map(group -> groupRemote.getNameById(group)).collect(Collectors.toList());
     }
 
     public List<String> removeGroup(String personId, String groupName) {
@@ -70,7 +72,9 @@ public class PersonService {
         Person fetchedPerson = personRepository.findById(personId).get();
 
         fetchedPerson.removeGroup(groupName);
-        return personRepository.save(fetchedPerson).getGroups();
+        return personRepository.save(fetchedPerson).getGroups().stream()
+                .filter(groupId -> !groupRemote.getNameById(groupId).equals(groupName))
+                .collect(Collectors.toList());
     }
 
     public Page<Person> getPersonsSearch(String search, String pagenumber, String pagesize) {
